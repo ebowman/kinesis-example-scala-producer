@@ -12,66 +12,22 @@
  */
 package com.snowplowanalytics.kinesis.producer
 
-// Java
-import java.io.File
+import akka.actor._
+import com.typesafe.config.ConfigFactory
 
-// Argot
-import org.clapper.argot._
+object ProducerApp extends App {
 
-// Config
-import com.typesafe.config.{Config, ConfigFactory}
+  val config = ConfigFactory.parseResources("default.conf")
 
-/**
- * The CLI entrypoint for the ProducerApp
- */
-object ProducerApp {
+  val producerConfig = new ProducerConfig(config.getConfig("producer"))
+  val sys = ActorSystem("kinesis-producer")
+  val creator = sys.actorOf(Props[StreamFactory], "factory")
 
-    // Argument specifications
-  import ArgotConverters._
+  creator ! Init(producerConfig)
 
-  // General bumf for our app
-  val parser = new ArgotParser(
-    programName = generated.Settings.name,
-    compactUsage = true,
-    preUsage = Some("%s: Version %s. Copyright (c) 2013, %s.".format(
-      generated.Settings.name,
-      generated.Settings.version,
-      generated.Settings.organization)
-    )
-  )
 
-  // Optional config argument
-  val config = parser.option[Config](List("config"),
-                                     "filename",
-                                     "Configuration file. Defaults to \"resources/default.conf\" (within .jar) if not set") {
-    (c, opt) =>
-
-      val file = new File(c)
-      if (file.exists) {
-        ConfigFactory.parseFile(file)
-      } else {
-        parser.usage("Configuration file \"%s\" does not exist".format(c))
-        ConfigFactory.empty()
-      }
-  }
-
-  /**
-   * Main Producer program
-   */
-  def main(args:Array[String]) {
-
-    // Grab the command line arguments
-    parser.parse(args)
-    val conf = config.value.getOrElse(ConfigFactory.load("default")) // Fall back to the /resources/default.conf
-
-    val sp = StreamProducer(conf)
-
-    // Create the stream if it doesn't exist.
-    if (!sp.createStream()) {
-      return
-    }
-
-    // Define and run our pricing mechanism
-    sp.produceStream()
+  // block forever
+  this.synchronized {
+    this.wait()
   }
 }

@@ -18,7 +18,7 @@ import io.github.cloudify.scala.aws.kinesis.Definitions.Stream
 import io.github.cloudify.scala.aws.kinesis.KinesisDsl._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class StreamFactory extends Actor with ActorLogging {
@@ -40,7 +40,7 @@ class StreamFactory extends Actor with ActorLogging {
           Kinesis.streams.create(streamName): Future[Stream]
         } else {
           log.info(s"Stream $streamName exists.")
-          Promise.successful(streamName: Stream).future
+          Future.successful(streamName: Stream)
         }
       }
 
